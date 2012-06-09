@@ -14,22 +14,36 @@ public class SingleNioServerTester {
 		DataInputStream inStream = new DataInputStream(socket.getInputStream());
 		DataOutputStream outStream = new DataOutputStream(socket.getOutputStream());
 
-		outStream.write(new byte[] { 0x00, 0x00, 0x00, 0x04, 0x40, 0x11, 0x12, 0x13, 0x14 });
+		byte[] buff1 = new byte[] { 0x00, 0x00, 0x00, 0x04, 0x40, 0x11, 0x12, 0x13, 0x14 };
+		for (byte b : buff1) {
+			try {
+				Thread.sleep(1000); // um zu sehen ob auch fragmentierte packete richtig ankommen!
+			} catch (InterruptedException e) {}
+			outStream.write(b);
+			outStream.flush();
+		}
+		// outStream.write(buff1);
+		outStream.write(buff1);
 		outStream.flush();
 
-		long length = inStream.readInt();
-		byte flags = inStream.readByte();
-		byte buffer[] = new byte[(int) length];
-		int readCount = 0;
-		while (readCount < length) {
-			readCount += inStream.read(buffer, readCount, (int) (length - readCount));
-		}
-		System.out.println(flagsToString(flags));
-		System.out.println(String.format("%x", new BigInteger(1, buffer)));
+		readPacket(inStream);
+		readPacket(inStream);
 
 		inStream.close();
 		outStream.close();
 		socket.close();
+	}
+
+	private static void readPacket(DataInputStream inStream) throws IOException {
+		long length = inStream.readInt();
+		byte flags = inStream.readByte();
+		System.out.println(flagsToString(flags));
+		byte buffer[] = new byte[(int) length];
+		int readCount = 0;
+		while (readCount < length) {
+			readCount += inStream.read(buffer, readCount, (int) (length - readCount));
+			System.out.println(String.format("%x", new BigInteger(1, buffer)));
+		}
 	}
 
 	private static String flagsToString(byte flags) {

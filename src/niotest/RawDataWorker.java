@@ -40,23 +40,31 @@ public class RawDataWorker implements Runnable {
 				packetParts.put(dataEvent.socketChannel, packetPart);
 			}
 			while (packetPart.bytesOfLengthAlreadyRead < 4 && dataEvent.data.hasRemaining()) {
-				packetPart.lengthAsByteArray[packetPart.bytesOfLengthAlreadyRead] = dataEvent.data.get();
+				packetPart.length += (dataEvent.data.get() << (24 - (packetPart.bytesOfLengthAlreadyRead * 8)));
 				packetPart.bytesOfLengthAlreadyRead++;
 			}
-			if (null == packetPart.data) {
-				packetPart.length = ((packetPart.lengthAsByteArray[0] << 24) + (packetPart.lengthAsByteArray[1] << 16) + (packetPart.lengthAsByteArray[2] << 8) + (packetPart.lengthAsByteArray[3] << 0));
+			if (null == packetPart.data && 4 == packetPart.bytesOfLengthAlreadyRead) {
 				packetPart.data = ByteBuffer.allocate((int) packetPart.length);
 			}
 
-			if (dataEvent.data.hasRemaining()) {
+			if (null == packetPart.flags && dataEvent.data.hasRemaining()) {
 				packetPart.flags = dataEvent.data.get();
 			}
 
 			if (dataEvent.data.hasRemaining()) {
-				packetPart.data.put(dataEvent.data);
+				if (dataEvent.data.remaining() <= packetPart.data.remaining()) {
+					packetPart.data.put(dataEvent.data);
+				} else {
+					for (int i = packetPart.data.remaining(); i > 0; i--) {
+						packetPart.data.put(dataEvent.data.get());
+					}
+					dataEvent.data.compact();
+					dataEvent.data.flip();
+					queue.add(dataEvent);
+				}
 			}
 
-			if (!packetPart.data.hasRemaining()) {
+			if (packetPart.data != null && !packetPart.data.hasRemaining()) {
 				packetPart.server = dataEvent.server;
 				packetPart.socketChannel = dataEvent.socketChannel;
 				TomahawkPacket packet = packetPart.generatePacket();

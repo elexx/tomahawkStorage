@@ -4,12 +4,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class TomahawkPacketPart {
-	public long length;
-	public byte flags;
+	public long length = 0;
+	public Byte flags;
 	public ByteBuffer data;
 
 	public short bytesOfLengthAlreadyRead = 0;
-	public byte[] lengthAsByteArray = new byte[4];
 
 	public NioServer server;
 	public SocketChannel socketChannel;
