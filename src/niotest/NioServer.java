@@ -1,70 +1,76 @@
 package niotest;
 
 import java.io.IOException;
-import java.net.InetAddress;
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.spi.SelectorProvider;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedTransferQueue;
+
+import niotest.ChangeRequest.ChangeRequestType;
 
 public class NioServer implements Runnable {
-	private InetAddress hostAddress;
-	private int port;
-	private ServerSocketChannel serverChannel;
-	private Selector selector;
-	private ByteBuffer readBuffer = ByteBuffer.allocate(8192);
-	private EchoWorker worker;
-	private List<ChangeRequest> pendingChanges = new LinkedList<ChangeRequest>();
-	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<SocketChannel, List<ByteBuffer>>();
+	private final ServerSocketChannel serverChannel;
+	private final Selector selector;
+	private final ByteBuffer readBuffer = ByteBuffer.allocate(8192);
+	private final RawDataWorker rawDataWorker = new RawDataWorker();
+	private final TomahawkDataWorker tomahawkDataWorker = new TomahawkDataWorker();
+	private final Queue<ChangeRequest> pendingChanges = new ConcurrentLinkedQueue<ChangeRequest>();
+	private final Map<SocketChannel, Queue<ByteBuffer>> rawDataSend = new ConcurrentHashMap<SocketChannel, Queue<ByteBuffer>>();
 
-	public NioServer(InetAddress hostAddress, int port, EchoWorker worker) throws IOException {
-		this.hostAddress = hostAddress;
-		this.port = port;
-		selector = initSelector();
-		this.worker = worker;
+	public NioServer(InetSocketAddress address) throws IOException {
+
+		new Thread(rawDataWorker).start();
+		new Thread(tomahawkDataWorker).start();
+
+		selector = Selector.open();
+
+		serverChannel = ServerSocketChannel.open();
+		serverChannel.configureBlocking(false);
+
+		serverChannel.socket().bind(address);
+
+		serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 	}
 
-	public void send(SocketChannel socket, byte[] data) {
-		synchronized (pendingChanges) {
-			pendingChanges.add(new ChangeRequest(socket, ChangeRequest.CHANGEOPS, SelectionKey.OP_WRITE));
+	public void addTomahawkPacket(TomahawkPacket packet) {
+		tomahawkDataWorker.processData(packet);
+	}
 
-			synchronized (pendingData) {
-				List<ByteBuffer> queue = pendingData.get(socket);
-				if (null == queue) {
-					queue = new ArrayList<ByteBuffer>();
-					pendingData.put(socket, queue);
-				}
-				queue.add(ByteBuffer.wrap(data));
+	public void send(SocketChannel socket, ByteBuffer data) {
+		if (rawDataSend.containsKey(socket)) {
+			Queue<ByteBuffer> queue = rawDataSend.get(socket);
+			synchronized (queue) {
+				queue.add(data);
 			}
-		}
+			pendingChanges.add(new ChangeRequest(socket, ChangeRequestType.CHANGEOPS, SelectionKey.OP_WRITE));
 
-		selector.wakeup();
+			selector.wakeup();
+		}
 	}
 
 	@Override
 	public void run() {
 		while (true) {
 			try {
-				synchronized (pendingChanges) {
-					Iterator<ChangeRequest> changes = pendingChanges.iterator();
-					while (changes.hasNext()) {
-						ChangeRequest change = changes.next();
-						switch (change.type) {
-						case ChangeRequest.CHANGEOPS:
-							SelectionKey key = change.socket.keyFor(selector);
+				while (!pendingChanges.isEmpty()) {
+					ChangeRequest change = pendingChanges.poll();
+					switch (change.changeRequestType) {
+					case CHANGEOPS:
+						SelectionKey key = change.socket.keyFor(selector);
+						if (key != null && key.isValid()) {
 							key.interestOps(change.ops);
 						}
+						break;
 					}
-					pendingChanges.clear();
 				}
 
 				selector.select();
@@ -97,6 +103,7 @@ public class NioServer implements Runnable {
 		SocketChannel socketChannel = serverSocketChannel.accept();
 		socketChannel.configureBlocking(false);
 		socketChannel.register(selector, SelectionKey.OP_READ);
+		rawDataSend.put(socketChannel, new LinkedTransferQueue<ByteBuffer>());
 	}
 
 	private void read(SelectionKey key) throws IOException {
@@ -110,31 +117,31 @@ public class NioServer implements Runnable {
 		} catch (IOException e) {
 			key.cancel();
 			socketChannel.close();
+			rawDataSend.remove(socketChannel);
 			return;
 		}
 
 		if (-1 == numRead) {
-			key.channel().close();
 			key.cancel();
+			socketChannel.close();
+			rawDataSend.remove(socketChannel);
 			return;
 		}
-
-		worker.processData(this, socketChannel, readBuffer.array(), numRead);
+		rawDataWorker.processData(this, socketChannel, readBuffer.array(), numRead);
 	}
 
 	private void write(SelectionKey key) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
-		synchronized (pendingData) {
-			List<ByteBuffer> queue = pendingData.get(socketChannel);
-
+		Queue<ByteBuffer> queue = rawDataSend.get(socketChannel);
+		synchronized (queue) {
 			while (!queue.isEmpty()) {
-				ByteBuffer buf = queue.get(0);
+				ByteBuffer buf = queue.peek();
 				socketChannel.write(buf);
 				if (buf.remaining() > 0) {
 					break;
 				}
-				queue.remove(0);
+				queue.poll();
 			}
 
 			if (queue.isEmpty()) {
@@ -143,25 +150,10 @@ public class NioServer implements Runnable {
 		}
 	}
 
-	private Selector initSelector() throws IOException {
-		Selector socketSelector = SelectorProvider.provider().openSelector();
-
-		serverChannel = ServerSocketChannel.open();
-		serverChannel.configureBlocking(false);
-
-		InetSocketAddress isa = new InetSocketAddress(hostAddress, port);
-		serverChannel.socket().bind(isa);
-
-		serverChannel.register(socketSelector, SelectionKey.OP_ACCEPT);
-
-		return socketSelector;
-	}
-
 	public static void main(String[] args) {
+		System.out.println(ManagementFactory.getRuntimeMXBean().getName());
 		try {
-			EchoWorker worker = new EchoWorker();
-			new Thread(worker).start();
-			new Thread(new NioServer(null, 9090, worker)).start();
+			new Thread(new NioServer(new InetSocketAddress(9090))).start();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

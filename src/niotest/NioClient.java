@@ -15,6 +15,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import niotest.ChangeRequest.ChangeRequestType;
+
 public class NioClient implements Runnable {
 	private InetAddress hostAddress;
 	private int port;
@@ -55,12 +57,12 @@ public class NioClient implements Runnable {
 					Iterator<ChangeRequest> changes = pendingChanges.iterator();
 					while (changes.hasNext()) {
 						ChangeRequest change = changes.next();
-						switch (change.type) {
-						case ChangeRequest.CHANGEOPS:
+						switch (change.changeRequestType) {
+						case CHANGEOPS:
 							SelectionKey key = change.socket.keyFor(selector);
 							key.interestOps(change.ops);
 							break;
-						case ChangeRequest.REGISTER:
+						case REGISTER:
 							change.socket.register(selector, change.ops);
 							break;
 						}
@@ -169,7 +171,7 @@ public class NioClient implements Runnable {
 		socketChannel.connect(new InetSocketAddress(hostAddress, port));
 
 		synchronized (pendingChanges) {
-			pendingChanges.add(new ChangeRequest(socketChannel, ChangeRequest.REGISTER, SelectionKey.OP_CONNECT));
+			pendingChanges.add(new ChangeRequest(socketChannel, ChangeRequestType.REGISTER, SelectionKey.OP_CONNECT));
 		}
 
 		return socketChannel;
