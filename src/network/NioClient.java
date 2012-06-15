@@ -1,4 +1,4 @@
-package niotest;
+package network;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -15,7 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import niotest.ChangeRequest.ChangeRequestType;
+import network.ChangeRequest.ChangeRequestType;
 
 public class NioClient implements Runnable {
 	private InetAddress hostAddress;

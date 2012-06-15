@@ -1,4 +1,4 @@
-package niotest;
+package network.tests;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

@@ -1,4 +1,4 @@
-package tomahawk.impl;
+package old.tomahawk.impl;
 
 import java.net.Socket;
 import java.util.Set;

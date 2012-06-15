@@ -1,4 +1,4 @@
-package niotest;
+package network;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedTransferQueue;
 
-import niotest.ChangeRequest.ChangeRequestType;
+import network.ChangeRequest.ChangeRequestType;
 
 public class NioServer implements Runnable {
 	private final ServerSocketChannel serverChannel;

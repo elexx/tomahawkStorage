@@ -1,4 +1,4 @@
-package niotest.tests;
+package network.tests;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -18,7 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import niotest.tests.NioServerTester.TimeResult;
+import network.tests.NioServerTester.TimeResult;
 
 public class NioServerTester implements Callable<TimeResult> {
 	private final int num;

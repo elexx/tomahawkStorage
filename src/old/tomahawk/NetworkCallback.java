@@ -1,4 +1,4 @@
-package tomahawk;
+package old.tomahawk;
 
 public interface NetworkCallback {
 

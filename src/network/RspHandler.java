@@ -1,4 +1,4 @@
-package niotest;
+package network;
 
 public class RspHandler {
 	private byte[] rsp = null;

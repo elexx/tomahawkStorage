@@ -1,4 +1,4 @@
-package tomahawk.impl;
+package old.tomahawk.impl;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import tomahawk.Network;
+import old.tomahawk.Network;
 
 public class NetworkResolver implements Network {
 

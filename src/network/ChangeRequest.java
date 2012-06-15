@@ -1,4 +1,4 @@
-package niotest;
+package network;
 
 import java.nio.channels.SocketChannel;
 

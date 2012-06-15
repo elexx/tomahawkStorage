@@ -1,4 +1,4 @@
-package niotest;
+package network;
 
 import java.nio.ByteBuffer;
 import java.util.Queue;
