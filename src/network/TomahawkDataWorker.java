@@ -5,7 +5,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TomahawkDataWorker implements Runnable {
-	private final Queue<TomahawkPacket> queue = new ConcurrentLinkedQueue<TomahawkPacket>();
+	private final Queue<TomahawkPacket> queue = new ConcurrentLinkedQueue<>();
 
 	public void processData(final TomahawkPacket packet) {
 		synchronized (queue) {

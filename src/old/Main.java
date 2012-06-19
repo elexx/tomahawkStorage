@@ -1,4 +1,5 @@
 package old;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -15,7 +16,7 @@ public class Main {
 		byte[] buffer = new byte[256];
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-		Map<String, ClientHandler> clients = new HashMap<String, ClientHandler>();
+		Map<String, ClientHandler> clients = new HashMap<>();
 
 		do {
 			System.out.println("waiting for more");

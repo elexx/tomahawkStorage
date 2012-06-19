@@ -23,8 +23,8 @@ public class NioServer implements Runnable {
 	private final ByteBuffer readBuffer = ByteBuffer.allocate(8192);
 	private final RawDataWorker rawDataWorker = new RawDataWorker();
 	private final TomahawkDataWorker tomahawkDataWorker = new TomahawkDataWorker();
-	private final Queue<ChangeRequest> pendingChanges = new ConcurrentLinkedQueue<ChangeRequest>();
-	private final Map<SocketChannel, Queue<ByteBuffer>> rawDataSend = new ConcurrentHashMap<SocketChannel, Queue<ByteBuffer>>();
+	private final Queue<ChangeRequest> pendingChanges = new ConcurrentLinkedQueue<>();
+	private final Map<SocketChannel, Queue<ByteBuffer>> rawDataSend = new ConcurrentHashMap<>();
 
 	public NioServer(InetSocketAddress address) throws IOException {
 

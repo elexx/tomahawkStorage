@@ -25,7 +25,6 @@ public class ConnectionAcceptor implements Runnable {
 				Socket socket = serverSocket.accept();
 				cachedService.submit(new ClientConnectionHandler(socket, sockets));
 			}
-		} catch (IOException e) {
-		}
+		} catch (IOException e) {}
 	}
 }

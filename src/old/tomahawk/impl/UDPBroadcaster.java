@@ -18,7 +18,6 @@ public class UDPBroadcaster implements Runnable {
 	public void run() {
 		try {
 			socket.send(packet);
-		} catch (IOException e) {
-		}
+		} catch (IOException e) {}
 	}
 }

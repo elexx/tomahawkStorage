@@ -9,8 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class RawDataWorker implements Runnable {
-	private final Queue<ServerDataEvent> queue = new ConcurrentLinkedQueue<ServerDataEvent>();
-	private final Map<SocketChannel, TomahawkPacketPart> packetParts = new ConcurrentHashMap<SocketChannel, TomahawkPacketPart>();
+	private final Queue<ServerDataEvent> queue = new ConcurrentLinkedQueue<>();
+	private final Map<SocketChannel, TomahawkPacketPart> packetParts = new ConcurrentHashMap<>();
 
 	public void processData(final NioServer server, final SocketChannel socket, final byte[] data, final int count) {
 		byte[] dataCopy = Arrays.copyOf(data, count);

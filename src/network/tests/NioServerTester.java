@@ -21,11 +21,7 @@ import java.util.concurrent.Future;
 import network.tests.NioServerTester.TimeResult;
 
 public class NioServerTester implements Callable<TimeResult> {
-	private final int num;
-
-	public NioServerTester(int num) {
-		this.num = num;
-	}
+	public NioServerTester(int num) {}
 
 	@Override
 	public TimeResult call() throws IOException {
@@ -70,9 +66,9 @@ public class NioServerTester implements Callable<TimeResult> {
 	public static void main(String[] args) {
 		ExecutorService eservice = Executors.newFixedThreadPool(1000);
 
-		List<Future<TimeResult>> results = new LinkedList<Future<TimeResult>>();
-		List<Integer> connectTimes = new ArrayList<Integer>();
-		List<Integer> sendReceiveTimes = new ArrayList<Integer>();
+		List<Future<TimeResult>> results = new LinkedList<>();
+		List<Integer> connectTimes = new ArrayList<>();
+		List<Integer> sendReceiveTimes = new ArrayList<>();
 
 		int currentThreads = 0;
 		int maxThreads = 0;

@@ -22,8 +22,8 @@ public class NioClient implements Runnable {
 	private int port;
 	private Selector selector;
 	private ByteBuffer readBuffer = ByteBuffer.allocate(8192);
-	private List<ChangeRequest> pendingChanges = new LinkedList<ChangeRequest>();
-	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<SocketChannel, List<ByteBuffer>>();
+	private List<ChangeRequest> pendingChanges = new LinkedList<>();
+	private Map<SocketChannel, List<ByteBuffer>> pendingData = new HashMap<>();
 	private Map<SocketChannel, RspHandler> rspHandlers = Collections.synchronizedMap(new HashMap<SocketChannel, RspHandler>());
 
 	public NioClient(InetAddress hostAddress, int port) throws IOException {
@@ -40,7 +40,7 @@ public class NioClient implements Runnable {
 		synchronized (pendingData) {
 			List<ByteBuffer> queue = pendingData.get(socket);
 			if (null == queue) {
-				queue = new ArrayList<ByteBuffer>();
+				queue = new ArrayList<>();
 				pendingData.put(socket, queue);
 			}
 			queue.add(ByteBuffer.wrap(data));
@@ -151,7 +151,7 @@ public class NioClient implements Runnable {
 		}
 	}
 
-	private void finishConnection(SelectionKey key) throws IOException {
+	private static void finishConnection(SelectionKey key) throws IOException {
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 		try {
 			socketChannel.finishConnect();
@@ -177,7 +177,7 @@ public class NioClient implements Runnable {
 		return socketChannel;
 	}
 
-	private Selector initSelector() throws IOException {
+	private static Selector initSelector() throws IOException {
 		return Selector.open();
 	}
 
