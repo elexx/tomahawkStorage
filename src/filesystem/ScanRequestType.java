@@ -1,5 +1,5 @@
 package filesystem;
 
-public enum ScanRequestType {
+enum ScanRequestType {
 	SCAN_PATH, STOP_SCANNER;
 }

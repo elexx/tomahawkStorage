@@ -4,7 +4,7 @@ import java.nio.file.Path;
 
 import database.TomahawkDBInterface;
 
-public class DirectoryScanRequest {
+class DirectoryScanRequest {
 	public final ScanRequestType type;
 	public final Path path;
 	public final TomahawkDBInterface database;

@@ -8,7 +8,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
 
-public class FileScannerWorker<E extends Path> implements FileVisitor<E> {
+class FileScannerWorker<E extends Path> implements FileVisitor<E> {
 
 	private final List<E> list = new LinkedList<>();
 

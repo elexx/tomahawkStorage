@@ -7,6 +7,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,6 +32,7 @@ import database.model.Track;
 public class FileScanner implements Runnable {
 
 	private final Queue<DirectoryScanRequest> queue = new ConcurrentLinkedQueue<>();
+	private final LinkedList<NewFileCallback> callbacks = new LinkedList<>();
 
 	public void processDirectory(final Path path, final TomahawkDBInterface database) {
 		synchronized (queue) {
@@ -144,6 +146,9 @@ public class FileScanner implements Runnable {
 			}
 
 			scanRequest.database.newFiles(trackList);
+			for (NewFileCallback callback : callbacks) {
+				callback.newFilesAdded();
+			}
 		}
 	}
 
@@ -153,5 +158,9 @@ public class FileScanner implements Runnable {
 		} catch (NumberFormatException e) {
 			return 0;
 		}
+	}
+
+	public void addNetworkCallback(NewFileCallback callback) {
+		callbacks.add(callback);
 	}
 }
