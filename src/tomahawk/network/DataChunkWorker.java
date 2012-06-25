@@ -33,7 +33,6 @@ public class DataChunkWorker implements Worker {
 				packetPart.bytesOfLengthAlreadyRead++;
 			}
 			if (null == packetPart.data && 4 == packetPart.bytesOfLengthAlreadyRead) {
-				System.out.println("packetPart Length " + packetPart.length);
 				packetPart.data = ByteBuffer.allocate((int) packetPart.length);
 			}
 

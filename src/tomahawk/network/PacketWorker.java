@@ -1,16 +1,21 @@
 package tomahawk.network;
 
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.zip.InflaterInputStream;
 
-import network.DispatcherEventHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import tomahawk.network.ClientConnection.ConnectionType;
 import tomahawk.network.Protocol.Type;
 import tomahawk.util.ByteBufferInputStream;
@@ -21,9 +26,17 @@ import com.google.gson.stream.JsonReader;
 
 public class PacketWorker implements Runnable {
 
+	private static final Logger logger = LoggerFactory.getLogger(PacketWorker.class);
+
 	private final Queue<TomahawkPacket> queue = new ConcurrentLinkedQueue<>();
 	private final Gson gson = new GsonBuilder().create();
-	private DispatcherEventHandler eventHandler;
+	private final List<NewControlConnectionHandler> eventHandlers = new LinkedList<>();
+
+	private final Map<SocketChannel, ClientConnection> channelClientMap;
+
+	public PacketWorker(final Map<SocketChannel, ClientConnection> channelClientMap) {
+		this.channelClientMap = channelClientMap;
+	}
 
 	public void processPacket(TomahawkPacket packet) {
 		synchronized (queue) {
@@ -32,14 +45,17 @@ public class PacketWorker implements Runnable {
 		}
 	}
 
-	public void setNewConnectionEventHandler(DispatcherEventHandler eventHandler) {
-		this.eventHandler = eventHandler;
+	public void addNewControlConnectionHandler(NewControlConnectionHandler eventHandler) {
+		eventHandlers.add(eventHandler);
+	}
+
+	public void removeNewControlConnectionHandler(NewControlConnectionHandler eventHandler) {
+		eventHandlers.remove(eventHandler);
 	}
 
 	@Override
 	public void run() {
-		Map<SocketChannel, ClientConnection> channelClientMap = new HashMap<>();
-		Map<UUID, ClientConnection> uuidClientMap = new HashMap<>();
+		Map<UUID, ClientConnection> activeKeys = new HashMap<>();
 
 		while (true) {
 			TomahawkPacket packet;
@@ -52,7 +68,11 @@ public class PacketWorker implements Runnable {
 				packet = queue.remove();
 			}
 
+			logger.info("processing packet - length: " + packet.length);
+
 			if (Flag.isFlagSet(packet.flags, Flag.JSON)) {
+				logger.info("JsonPacket");
+
 				JsonReader reader;
 				long realDataLength;
 				if (Flag.isFlagSet(packet.flags, Flag.COMPRESSED)) {
@@ -64,31 +84,42 @@ public class PacketWorker implements Runnable {
 				}
 
 				JsonPacket jsonPacket = gson.fromJson(reader, JsonPacket.class);
-				if ("whitelist" == jsonPacket.key) {
+				if ("whitelist".equals(jsonPacket.key)) {
+					logger.info("new controlConn: " + jsonPacket.conntype);
 					// control
-					if ("accept-offer" == jsonPacket.conntype) {
-						ClientConnection client = new ClientConnection(UUID.fromString(jsonPacket.nodeid));
+					if ("accept-offer".equals(jsonPacket.conntype)) {
+						ClientConnection client = new ClientConnection(UUID.fromString(jsonPacket.nodeid), packet.transmitter);
 						client.put(ConnectionType.CONTROL, packet.socketChannel);
 
 						channelClientMap.put(packet.socketChannel, client);
-						uuidClientMap.put(client.uuid, client);
+						// uuidClientMap.put(client.uuid, client);
+						logger.info("UUID: " + client.uuid);
 
 						packet.transmitter.sendPacket(packet.socketChannel, Protocol.getPacket(Type.VERSION));
+
+						for (NewControlConnectionHandler handler : eventHandlers) {
+							handler.newControlConnection(packet.socketChannel);
+						}
 					}
-				} else if (jsonPacket.key.startsWith("FILE_REQUEST_KEY:")) {
+					// } else if (jsonPacket.key.startsWith("FILE_REQUEST_KEY:")) {
+					// logger.info("new FILE_REQUEST_KEY");
 					// stream
 				} else {
+					logger.info("new dbConn");
 					// dbsync
-					// currently ignoring the key!
-					if ("accept-offer" == jsonPacket.conntype) {
-						ClientConnection client = uuidClientMap.get(jsonPacket.controlid);
+					if ("accept-offer".equals(jsonPacket.conntype)) {
+						ClientConnection client = activeKeys.get(UUID.fromString(jsonPacket.key));
 						client.put(ConnectionType.DBSYNC, packet.socketChannel);
 
 						channelClientMap.put(packet.socketChannel, client);
 
+						logger.info("UUID: " + client.uuid);
+
 						packet.transmitter.sendPacket(packet.socketChannel, Protocol.getPacket(Type.VERSION));
 
-					} else if ("fetchops" == jsonPacket.method) {
+					} else if ("fetchops".equals(jsonPacket.method)) {
+						packet.transmitter.sendPacket(packet.socketChannel, ByteBuffer.wrap(new byte[] { 0, 0, 0, 2, (1 << 4), 'o', 'k' }));
+
 						if ("" == jsonPacket.lastop) {
 							// replay all ops!
 
@@ -103,7 +134,9 @@ public class PacketWorker implements Runnable {
 					ClientConnection client = channelClientMap.get(packet.socketChannel);
 					ConnectionType type = client.channel2Type.get(packet.socketChannel);
 					if (type != null && type == ConnectionType.CONTROL) {
-						packet.transmitter.sendPacket(packet.socketChannel, Protocol.getPacket(Type.DB_SYNCOFFER));
+						UUID key = UUID.randomUUID();
+						activeKeys.put(key, client);
+						packet.transmitter.sendPacket(packet.socketChannel, Protocol.getDbSyncPacket(key.toString()));
 					} else if (type != null && type == ConnectionType.DBSYNC) {
 						// nothing todo ... version check was successful
 						// maybe the client will now send a "method" : "fetchops"
@@ -115,6 +148,8 @@ public class PacketWorker implements Runnable {
 					//
 					// }
 				}
+			} else if (Flag.isFlagSet(packet.flags, Flag.PING)) {
+				channelClientMap.get(packet.socketChannel).lastSeen = System.currentTimeMillis();
 			}
 
 			// ClientConnection client;
@@ -180,4 +215,5 @@ public class PacketWorker implements Runnable {
 	// }
 	// }
 	// }
+
 }

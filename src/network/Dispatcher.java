@@ -14,7 +14,13 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Dispatcher implements Runnable, Transmitter {
+
+	private final static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
+
 	private final ServerSocketChannel serverChannel;
 	private final Selector selector;
 
@@ -139,7 +145,7 @@ public class Dispatcher implements Runnable, Transmitter {
 	}
 
 	private void write(SelectionKey key) throws IOException {
-		System.out.println("write " + key);
+		logger.info("write to " + key);
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
 		Queue<ByteBuffer> queue = packetSendMap.get(socketChannel);

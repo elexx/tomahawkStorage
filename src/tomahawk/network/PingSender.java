@@ -8,15 +8,19 @@ import network.DispatcherEventHandler;
 import network.Transmitter;
 import tomahawk.network.Protocol.Type;
 
-public class PingSender implements DispatcherEventHandler, Runnable {
+public class PingSender implements DispatcherEventHandler, NewControlConnectionHandler, Runnable {
 
 	private final Set<SocketChannel> channels = new HashSet<>();
 	private Transmitter transmitter;
 
 	@Override
 	public void connectEvent(Transmitter transmitter, SocketChannel socketChannel) {
-		channels.add(socketChannel);
 		this.transmitter = transmitter;
+	}
+
+	@Override
+	public void newControlConnection(SocketChannel socketChannel) {
+		channels.add(socketChannel);
 	}
 
 	@Override
@@ -30,4 +34,5 @@ public class PingSender implements DispatcherEventHandler, Runnable {
 			transmitter.sendPacket(channel, Protocol.getPacket(Type.PING));
 		}
 	}
+
 }

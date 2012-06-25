@@ -9,7 +9,7 @@ import com.google.gson.JsonObject;
 class Protocol {
 
 	public enum Type {
-		PING(PINGPACKET), OK(OKPACKET), METHOD_TRIGGER(METHOD_TRIGGER_PACKET), VERSION(VERSIONPACKET), DB_SYNCOFFER(DB_SYNCOFFERPACKET);
+		PING(PINGPACKET), OK(OKPACKET), METHOD_TRIGGER(METHOD_TRIGGER_PACKET), VERSION(VERSIONPACKET);
 
 		private final byte[] data;
 
@@ -22,11 +22,17 @@ class Protocol {
 		return ByteBuffer.wrap(type.data).asReadOnlyBuffer();
 	}
 
+	public static ByteBuffer getDbSyncPacket(String key) {
+		JsonObject object = new JsonObject();
+		object.addProperty("key", key);
+		object.addProperty("method", "dbsync-offer");
+		return ByteBuffer.wrap(writeJsonObjectToByteArray(object));
+	}
+
 	private static final byte[] PINGPACKET = new byte[] { 0, 0, 0, 0, Flag.flagsToByte(Flag.PING) };
 	private static final byte[] OKPACKET = new byte[] { 0, 0, 0, 2, Flag.flagsToByte(Flag.SETUP), 'o', 'k' };
 	private static final byte[] VERSIONPACKET = new byte[] { 0, 0, 0, 1, Flag.flagsToByte(Flag.SETUP), '4' };
 	private static final byte[] METHOD_TRIGGER_PACKET;
-	private static final byte[] DB_SYNCOFFERPACKET;
 
 	private static final Gson gson = new GsonBuilder().create();
 
@@ -36,12 +42,7 @@ class Protocol {
 			object.addProperty("method", "trigger");
 			METHOD_TRIGGER_PACKET = writeJsonObjectToByteArray(object);
 		}
-		{
-			JsonObject object = new JsonObject();
-			object.addProperty("key", "704443cd-111f-4eda-beef-b12345678900");
-			object.addProperty("method", "dbsync-offer");
-			DB_SYNCOFFERPACKET = writeJsonObjectToByteArray(object);
-		}
+
 	}
 
 	private static byte[] writeJsonObjectToByteArray(JsonObject object) {
