@@ -84,13 +84,15 @@ public class Dispatcher implements Runnable, Transmitter {
 
 	@Override
 	public void sendPacket(SocketChannel socketChannel, ByteBuffer data) {
-		Queue<ByteBuffer> queue = packetSendMap.get(socketChannel);
-		synchronized (queue) {
-			queue.add(data);
-		}
-		synchronEventQueue.add(SynchronEventFactory.createWriteInterestEvent(selector, socketChannel));
+		if (packetSendMap.containsKey(socketChannel)) {
+			Queue<ByteBuffer> queue = packetSendMap.get(socketChannel);
+			synchronized (queue) {
+				queue.add(data);
+			}
+			synchronEventQueue.add(SynchronEventFactory.createWriteInterestEvent(selector, socketChannel));
 
-		selector.wakeup();
+			selector.wakeup();
+		}
 	}
 
 	public void setNewConnectionEventHandler(DispatcherEventHandler eventHandler) {
@@ -145,7 +147,7 @@ public class Dispatcher implements Runnable, Transmitter {
 	}
 
 	private void write(SelectionKey key) throws IOException {
-		logger.info("write to " + key);
+		logger.trace("write to " + key);
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
 		Queue<ByteBuffer> queue = packetSendMap.get(socketChannel);
@@ -153,7 +155,7 @@ public class Dispatcher implements Runnable, Transmitter {
 			while (!queue.isEmpty()) {
 				ByteBuffer buffer = queue.peek();
 				socketChannel.write(buffer);
-				if (buffer.remaining() > 0) {
+				if (buffer.hasRemaining()) {
 					break;
 				}
 				queue.poll();

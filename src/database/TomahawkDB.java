@@ -9,6 +9,7 @@ import javax.persistence.Persistence;
 
 import database.model.Album;
 import database.model.Artist;
+import database.model.FileAction;
 import database.model.NewFileAction;
 import database.model.Track;
 
@@ -29,7 +30,13 @@ public class TomahawkDB implements TomahawkDBInterface {
 	}
 
 	@Override
-	public synchronized void newFiles(List<Track> audioFiles) {
+	public Track getTrackById(int id) {
+		List<Track> tracks = entityManager.createNamedQuery("getTrackById", Track.class).setParameter("id", id).getResultList();
+		return tracks.size() > 0 ? tracks.get(0) : null;
+	}
+
+	@Override
+	public void newFiles(List<Track> audioFiles) {
 		if (null != audioFiles && audioFiles.size() > 0) {
 			NewFileAction fileAction = new NewFileAction();
 			fileAction.uuid = UUID.randomUUID();
@@ -40,19 +47,33 @@ public class TomahawkDB implements TomahawkDBInterface {
 
 			fileAction.newTracks = audioFiles;
 
-			entityManager.getTransaction().begin();
-			entityManager.persist(fileAction);
-			entityManager.getTransaction().commit();
+			synchronized (entityManager) {
+				entityManager.getTransaction().begin();
+				entityManager.persist(fileAction);
+				entityManager.getTransaction().commit();
+			}
 		}
 	}
 
 	@Override
-	public synchronized void deleteFiles(List<Track> audioFiles) {
+	public void deleteFiles(List<Track> audioFiles) {
 		if (null != audioFiles && audioFiles.size() > 0) {
-			entityManager.getTransaction().begin();
-			entityManager.remove(audioFiles);
-			entityManager.getTransaction().commit();
+			synchronized (entityManager) {
+				entityManager.getTransaction().begin();
+				entityManager.remove(audioFiles);
+				entityManager.getTransaction().commit();
+			}
 		}
+	}
+
+	@Override
+	public List<FileAction> getAllFileActions() {
+		return entityManager.createNamedQuery("getAllFileActions", FileAction.class).getResultList();
+	};
+
+	@Override
+	public List<FileAction> getFileActionsSince(UUID uuid) {
+		return entityManager.createNamedQuery("getFileActionsSince", FileAction.class).setParameter("uuid", uuid).getResultList();
 	}
 
 	@Override

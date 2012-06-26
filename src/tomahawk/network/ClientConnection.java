@@ -17,6 +17,8 @@ public class ClientConnection {
 
 	public long lastSeen;
 
+	public int streamingId;
+
 	public ClientConnection(UUID uuid, Transmitter transmitter) {
 		this.uuid = uuid;
 		this.transmitter = transmitter;
@@ -28,6 +30,6 @@ public class ClientConnection {
 	}
 
 	public enum ConnectionType {
-		CONTROL, DBSYNC
+		CONTROL, DBSYNC, STREAMING
 	}
 }

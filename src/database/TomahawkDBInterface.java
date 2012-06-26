@@ -1,9 +1,11 @@
 package database;
 
 import java.util.List;
+import java.util.UUID;
 
 import database.model.Album;
 import database.model.Artist;
+import database.model.FileAction;
 import database.model.Track;
 
 public interface TomahawkDBInterface {
@@ -14,9 +16,15 @@ public interface TomahawkDBInterface {
 
 	public List<Track> getAllTracks();
 
+	public Track getTrackById(int id);
+
 	public void newFiles(List<Track> audioFiles);
 
 	public void deleteFiles(List<Track> audioFiles);
+
+	public List<FileAction> getAllFileActions();
+
+	public List<FileAction> getFileActionsSince(UUID uuid);
 
 	/**
 	 * returns the artist or an empty artist object. storing a new artist is implicit done by saving the track.

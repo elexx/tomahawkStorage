@@ -5,14 +5,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.jaudiotagger.audio.AudioFile;
@@ -82,8 +80,7 @@ public class FileScanner implements Runnable {
 			for (Path file : fileList) {
 				try {
 					BasicFileAttributes fileAttributes = Files.readAttributes(file, BasicFileAttributes.class);
-					GregorianCalendar lastModification = new GregorianCalendar(TimeZone.getTimeZone("UTC"), Locale.ROOT);
-					lastModification.setTimeInMillis(fileAttributes.lastModifiedTime().toMillis());
+					Date lastModification = new Date(fileAttributes.lastModifiedTime().toMillis());
 
 					AudioFile audioFile = AudioFileIO.read(file.toFile());
 					MP3File mp3File = (MP3File) audioFile;

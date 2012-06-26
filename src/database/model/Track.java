@@ -1,6 +1,6 @@
 package database.model;
 
-import java.util.Calendar;
+import java.util.Date;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -9,6 +9,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -16,7 +17,7 @@ import javax.persistence.TemporalType;
 
 @Entity
 @Table(name = "Track")
-@NamedQuery(name = "getAllTracks", query = "SELECT t FROM Track t")
+@NamedQueries({ @NamedQuery(name = "getAllTracks", query = "SELECT t FROM Track t"), @NamedQuery(name = "getTrackById", query = "SELECT t FROM Track t WHERE id = :id") })
 public class Track {
 
 	@Id
@@ -43,7 +44,7 @@ public class Track {
 
 	@Column(nullable = false)
 	@Temporal(TemporalType.TIMESTAMP)
-	public Calendar createTimestamp;
+	public Date createTimestamp;
 
 	@Column(nullable = false)
 	public long size;

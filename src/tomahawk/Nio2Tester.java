@@ -28,7 +28,7 @@ public class Nio2Tester {
 	public static final int PORT = 50211;
 	public static final UUID IDENTIFIER = UUID.fromString("12312312-ffff-eeee-dddd-1234567890ab");
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 
 		Map<SocketChannel, ClientConnection> channelClientMap = Collections.synchronizedMap(new HashMap<SocketChannel, ClientConnection>());
 
@@ -37,13 +37,18 @@ public class Nio2Tester {
 
 		FileScanner fileScanner = new FileScanner();
 		fileScanner.addNetworkCallback(new BroadcastService(channelClientMap.values()));
+		Thread fileScannerThread = new Thread(fileScanner);
+		fileScannerThread.start();
+		// fileScanner.processDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Trifling_Wings_-_a46901_---_Jamendo_-_MP3_VBR_192k"), database);
+		fileScanner.processDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Public_Domain_-_a1003_---_Jamendo_-_MP3_VBR_192k"), database);
+		Thread.sleep(500);
 
 		ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(5);
 
 		PingSender pingSender = new PingSender();
 		OldConnectionKiller connectionKiller = new OldConnectionKiller(10, TimeUnit.MINUTES, channelClientMap.values());
 
-		PacketWorker packetWorker = new PacketWorker(channelClientMap);
+		PacketWorker packetWorker = new PacketWorker(channelClientMap, database);
 		packetWorker.addNewControlConnectionHandler(pingSender);
 		Thread packetWorkerThread = new Thread(packetWorker);
 
@@ -53,11 +58,9 @@ public class Nio2Tester {
 		Thread serverThread = new Thread(dispatcher);
 
 		threadPool.scheduleAtFixedRate(pingSender, 0, 5, TimeUnit.SECONDS);
-		threadPool.scheduleAtFixedRate(new UDPBroadcaster(PORT, IDENTIFIER), 0, 1, TimeUnit.MINUTES);
+		threadPool.scheduleAtFixedRate(new UDPBroadcaster(PORT, IDENTIFIER), 0, 10, TimeUnit.SECONDS);
 		threadPool.scheduleAtFixedRate(connectionKiller, 0, 15, TimeUnit.MINUTES);
 		packetWorkerThread.start();
 		serverThread.start();
-
-		fileScanner.processDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Trifling_Wings_-_a46901_---_Jamendo_-_MP3_VBR_192k"), database);
 	}
 }
