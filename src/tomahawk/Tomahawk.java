@@ -24,7 +24,7 @@ import database.TomahawkDB;
 import database.TomahawkDBInterface;
 import filesystem.FileScanner;
 
-public class Nio2Tester {
+public class Tomahawk {
 	public static final int PORT = 50211;
 	public static final UUID IDENTIFIER = UUID.fromString("12312312-ffff-eeee-dddd-1234567890ab");
 
