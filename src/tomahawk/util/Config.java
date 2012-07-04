@@ -35,7 +35,7 @@ public class Config {
 	}
 
 	public enum ConfigKey {
-		uuid(java.util.UUID.randomUUID().toString()), readable_name("javaastorage"), port("50211");
+		uuid(java.util.UUID.randomUUID().toString()), readable_name("javastorage"), port("50211");
 
 		private final String defaultValue;
 
