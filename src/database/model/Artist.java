@@ -17,4 +17,19 @@ public class Artist {
 
 	@Column(nullable = false, unique = true)
 	public String name;
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj.getClass() == Artist.class) {
+			Artist a = (Artist) obj;
+			return a.name.equals(name);
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		return name.hashCode();
+	}
 }

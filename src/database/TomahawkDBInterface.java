@@ -22,6 +22,8 @@ public interface TomahawkDBInterface {
 
 	public void deleteFiles(List<Track> audioFiles);
 
+	public void updateFiles(List<Track> audioFiles);
+
 	public List<FileAction> getAllFileActions();
 
 	public List<FileAction> getFileActionsSince(UUID uuid);

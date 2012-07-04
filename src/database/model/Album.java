@@ -20,6 +20,22 @@ public class Album {
 	@Column(nullable = false, unique = true)
 	public String name;
 
-	@ManyToOne(cascade = { CascadeType.ALL }, optional = false)
+	@ManyToOne(cascade = { CascadeType.PERSIST }, optional = false)
 	public Artist artist;
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj.getClass() == Album.class) {
+			Album a = (Album) obj;
+			return (a.name.equals(name) && a.artist.equals(artist));
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		return (name.hashCode() ^ artist.hashCode());
+	}
+
 }

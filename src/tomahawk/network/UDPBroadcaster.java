@@ -12,8 +12,8 @@ public class UDPBroadcaster implements Runnable {
 	private final DatagramSocket socket;
 	private final DatagramPacket packet;
 
-	public UDPBroadcaster(final int port, final UUID uuid) throws SocketException, UnknownHostException {
-		byte[] identifier = ("TOMAHAWKADVERT:" + port + ":" + uuid.toString()).getBytes();
+	public UDPBroadcaster(final int port, final UUID uuid, final String readableName) throws SocketException, UnknownHostException {
+		byte[] identifier = ("TOMAHAWKADVERT:" + port + ":" + uuid.toString() + ":" + readableName).getBytes();
 		socket = new DatagramSocket();
 		packet = new DatagramPacket(identifier, identifier.length, InetAddress.getByName("255.255.255.255"), 50210);
 	}

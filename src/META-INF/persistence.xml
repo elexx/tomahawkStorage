@@ -27,8 +27,8 @@
 
 			<property name="cache.provider_class" value="org.hibernate.cache.internal.NoCacheProvider" />
 
-			<property name="hibernate.show_sql" value="true" />
-			<property name="hibernate.hbm2ddl.auto" value="create" />
+			<!-- <property name="hibernate.show_sql" value="true" /> -->
+			<!-- <property name="hibernate.hbm2ddl.auto" value="create" /> -->
 		</properties>
 	</persistence-unit>
 </persistence>

@@ -17,7 +17,7 @@ public class BroadcastService implements NewFileCallback {
 	}
 
 	@Override
-	public void newFilesAdded() {
+	public void filesAddedOrRemoved() {
 		synchronized (channelClientMap) {
 			for (ClientConnection clientConnection : channelClientMap) {
 				Transmitter transmitter = clientConnection.transmitter;

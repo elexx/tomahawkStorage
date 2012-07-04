@@ -40,7 +40,7 @@ import database.model.Track;
 
 public class PacketWorker implements Runnable {
 
-	private static final Logger logger = LoggerFactory.getLogger(PacketWorker.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PacketWorker.class);
 
 	private final Queue<TomahawkPacket> queue = new ConcurrentLinkedQueue<>();
 	private final Gson gson = new GsonBuilder().create();
@@ -84,14 +84,12 @@ public class PacketWorker implements Runnable {
 				packet = queue.remove();
 			}
 
-			logger.trace("processing packet - length: " + packet.length);
+			LOG.trace("processing packet - length: " + packet.length);
 			if (!Flag.isFlagSet(packet.flags, Flag.PING)) {
-				logger.info("Raw Packet: " + (packet.flags & 0xFF) + " " + new String(packet.data.array()));
+				LOG.debug("Raw Packet: " + (packet.flags & 0xFF) + " " + new String(packet.data.array()));
 			}
 
 			if (Flag.isFlagSet(packet.flags, Flag.JSON)) {
-				logger.info("JsonPacket");
-
 				JsonReader reader;
 				// long realDataLength;
 				if (Flag.isFlagSet(packet.flags, Flag.COMPRESSED)) {
@@ -104,14 +102,13 @@ public class PacketWorker implements Runnable {
 
 				JsonPacket jsonPacket = gson.fromJson(reader, JsonPacket.class);
 				if ("whitelist".equals(jsonPacket.key)) {
-					logger.info("new controlConn: " + jsonPacket.conntype);
 					// control
 					if ("accept-offer".equals(jsonPacket.conntype)) {
 						ClientConnection client = new ClientConnection(UUID.fromString(jsonPacket.nodeid), packet.transmitter);
 						client.put(ConnectionType.CONTROL, packet.socketChannel);
 
 						channelClientMap.put(packet.socketChannel, client);
-						logger.info("UUID: " + client.uuid);
+						LOG.debug("new controlConn from {} ", client.uuid);
 
 						packet.transmitter.sendPacket(packet.socketChannel, Protocol.getPacket(Type.VERSION));
 
@@ -121,7 +118,6 @@ public class PacketWorker implements Runnable {
 					}
 				} else if (jsonPacket.key != null && jsonPacket.key.startsWith("FILE_REQUEST_KEY:")) {
 					// stream
-					logger.info("new FILE_REQUEST_KEY");
 					int id = Integer.parseInt(jsonPacket.key.split(":")[1]);
 					UUID uuid = UUID.fromString(jsonPacket.controlid);
 					for (ClientConnection client : channelClientMap.values()) {
@@ -132,10 +128,10 @@ public class PacketWorker implements Runnable {
 							break;
 						}
 					}
+					LOG.debug("new FILE_REQUEST_KEY from {}", uuid);
 					packet.transmitter.sendPacket(packet.socketChannel, Protocol.getPacket(Type.VERSION));
 
 				} else {
-					logger.info("new dbConn");
 					// dbsync
 					if ("accept-offer".equals(jsonPacket.conntype)) {
 						ClientConnection client = activeKeys.get(UUID.fromString(jsonPacket.key));
@@ -143,12 +139,11 @@ public class PacketWorker implements Runnable {
 
 						channelClientMap.put(packet.socketChannel, client);
 
-						logger.info("UUID: " + client.uuid);
-
+						LOG.debug("new dbConn for {}", client.uuid);
 						packet.transmitter.sendPacket(packet.socketChannel, Protocol.getPacket(Type.VERSION));
 
 					} else if ("fetchops".equals(jsonPacket.method)) {
-						logger.info("lastop: " + jsonPacket.lastop);
+						LOG.debug("dbsync: generating oplist since {}", jsonPacket.lastop);
 						List<FileAction> fileActions;
 						if (null == jsonPacket.lastop || "".equals(jsonPacket.lastop)) {
 							fileActions = database.getAllFileActions();
@@ -186,7 +181,7 @@ public class PacketWorker implements Runnable {
 								}
 								answerObject.add("files", files);
 								String answerString = gson.toJson(answerObject);
-								logger.info(answerString);
+								LOG.trace(answerString);
 								ByteBuffer buffer = ByteBuffer.allocate(answerString.length() + 4 + 1);
 								buffer.putInt(answerString.length());
 								if (fileActionIt.hasNext()) {
@@ -210,7 +205,7 @@ public class PacketWorker implements Runnable {
 								answerObject.add("ids", files);
 								answerObject.addProperty("guid", fileActions.get(fileActions.size() - 1).uuid.toString());
 								String answerString = gson.toJson(answerObject);
-								logger.info(answerString);
+								LOG.trace(answerString);
 								ByteBuffer buffer = ByteBuffer.allocate(answerString.length() + 4 + 1);
 								buffer.putInt(answerString.length());
 								if (fileActionIt.hasNext()) {
@@ -224,6 +219,8 @@ public class PacketWorker implements Runnable {
 							}
 						}
 						packet.transmitter.sendPacket(packet.socketChannel, ByteBuffer.wrap(new byte[] { 0, 0, 0, 2, Flag.flagsToByte(Flag.DBOP), 'o', 'k' }));
+					} else {
+						LOG.info("unknown packet");
 					}
 				}
 			} else if (Flag.isFlagSet(packet.flags, Flag.SETUP)) {
@@ -231,13 +228,16 @@ public class PacketWorker implements Runnable {
 					ClientConnection client = channelClientMap.get(packet.socketChannel);
 					ConnectionType type = client.channel2Type.get(packet.socketChannel);
 					if (type != null && ConnectionType.CONTROL == type) {
+						LOG.trace("control connection established");
 						UUID key = UUID.randomUUID();
 						activeKeys.put(key, client);
 						packet.transmitter.sendPacket(packet.socketChannel, Protocol.getDbSyncPacket(key.toString()));
 					} else if (type != null && ConnectionType.DBSYNC == type) {
+						LOG.trace("dbsync connection established");
 						// nothing todo ... version check was successful
 						// maybe the client will now send a "method" : "fetchops"
 					} else if (type != null && ConnectionType.STREAMING == type) {
+						LOG.trace("streaming connection established");
 						int id = channelClientMap.get(packet.socketChannel).streamingId;
 						Track track = database.getTrackById(id);
 						if (track != null) {
@@ -247,7 +247,7 @@ public class PacketWorker implements Runnable {
 
 								int readBytesTotal = 0, readBytes = 0;
 								while (readBytesTotal < track.size) {
-									ByteBuffer buffer = ByteBuffer.allocate(4 * 1024 + 4 + 1 + 4);
+									ByteBuffer buffer = ByteBuffer.allocate(4 * 1024 + 4 + 1 + 4); // never ever use any other value than this!
 									buffer.position(5);
 									buffer.put("data".getBytes());
 									readBytes = channel.read(buffer);
@@ -257,7 +257,7 @@ public class PacketWorker implements Runnable {
 									if (readBytesTotal < track.size) {
 										buffer.put(Flag.flagsToByte(Flag.RAW, Flag.FRAGMENT));
 									} else {
-										logger.info("final block");
+										LOG.debug("streamConn, sent final block of {}", track.id);
 										buffer.put(Flag.flagsToByte(Flag.RAW));
 									}
 									buffer.rewind();
@@ -269,6 +269,8 @@ public class PacketWorker implements Runnable {
 								e.printStackTrace();
 							}
 						}
+					} else {
+						LOG.trace("unknown connection type!");
 					}
 				}
 			} else if (Flag.isFlagSet(packet.flags, Flag.PING)) {

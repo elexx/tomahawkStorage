@@ -27,17 +27,17 @@ public class Track {
 	@Column(nullable = false)
 	public String title;
 
-	@ManyToOne(cascade = { CascadeType.ALL }, optional = false)
+	@ManyToOne(cascade = { CascadeType.PERSIST }, optional = false)
 	public Artist artist;
 
-	@ManyToOne(cascade = { CascadeType.ALL }, optional = false)
+	@ManyToOne(cascade = { CascadeType.PERSIST }, optional = false)
 	public Album album;
 
 	@Column(nullable = false)
-	public int tracknumber;
+	public Integer tracknumber;
 
 	@Column(nullable = false)
-	public int releaseyear;
+	public Integer releaseyear;
 
 	@Column(nullable = false)
 	public String path;
@@ -47,17 +47,33 @@ public class Track {
 	public Date createTimestamp;
 
 	@Column(nullable = false)
-	public long size;
+	public Long size;
 
 	@Column(nullable = false)
 	public String mimetype;
 
 	@Column(nullable = false)
-	public long duration;
+	public Long duration;
 
 	@Column(nullable = false)
-	public long bitrate;
+	public Long bitrate;
 
-	@ManyToOne(cascade = { CascadeType.ALL }, optional = false)
+	@ManyToOne(cascade = { CascadeType.PERSIST }, optional = false)
 	public NewFileAction newFileAction;
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj.getClass() == Track.class) {
+			Track t = (Track) obj;
+			return (t.album.equals(album) && t.artist.equals(artist) && t.bitrate.equals(bitrate) && t.createTimestamp.getTime() == createTimestamp.getTime() && t.duration.equals(duration) && t.size.equals(size) && t.title.equals(title) && t.tracknumber.equals(tracknumber));
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		return (album.hashCode() ^ artist.hashCode() ^ bitrate.hashCode() ^ createTimestamp.hashCode() ^ duration.hashCode() ^ size.hashCode() ^ title.hashCode() ^ tracknumber.hashCode());
+	}
+
 }

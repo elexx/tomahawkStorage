@@ -1,5 +1,6 @@
 package database;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -7,19 +8,26 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import database.model.Album;
 import database.model.Artist;
+import database.model.DeleteFileAction;
 import database.model.FileAction;
 import database.model.NewFileAction;
 import database.model.Track;
 
 public class TomahawkDB implements TomahawkDBInterface {
 
+	private static final Logger LOG = LoggerFactory.getLogger(TomahawkDB.class);
+
 	private EntityManagerFactory entityManagerFactory;
 	private EntityManager entityManager;
 
 	@Override
 	public void connect(String persistenceUnitName) {
+		LOG.trace("connecting to " + persistenceUnitName);
 		entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName);
 		entityManager = entityManagerFactory.createEntityManager();
 	}
@@ -58,9 +66,31 @@ public class TomahawkDB implements TomahawkDBInterface {
 	@Override
 	public void deleteFiles(List<Track> audioFiles) {
 		if (null != audioFiles && audioFiles.size() > 0) {
+			DeleteFileAction fileAction = new DeleteFileAction();
+			fileAction.uuid = UUID.randomUUID();
+
+			fileAction.deletedFileIds = new ArrayList<>(audioFiles.size());
+
 			synchronized (entityManager) {
 				entityManager.getTransaction().begin();
-				entityManager.remove(audioFiles);
+				for (Track t : audioFiles) {
+					fileAction.deletedFileIds.add(t.id);
+					entityManager.remove(t);
+				}
+				entityManager.persist(fileAction);
+				entityManager.getTransaction().commit();
+			}
+		}
+	}
+
+	@Override
+	public void updateFiles(List<Track> audioFiles) {
+		if (null != audioFiles && audioFiles.size() > 0) {
+			synchronized (entityManager) {
+				entityManager.getTransaction().begin();
+				for (Track t : audioFiles) {
+					entityManager.merge(t);
+				}
 				entityManager.getTransaction().commit();
 			}
 		}
@@ -90,6 +120,7 @@ public class TomahawkDB implements TomahawkDBInterface {
 
 	@Override
 	public void close() {
+		LOG.trace("shutdown");
 		entityManager.close();
 		entityManagerFactory.close();
 	}

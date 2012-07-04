@@ -13,6 +13,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import network.Dispatcher;
+
+import org.apache.log4j.xml.DOMConfigurator;
+
 import tomahawk.network.BroadcastService;
 import tomahawk.network.ClientConnection;
 import tomahawk.network.DataChunkWorker;
@@ -20,27 +23,31 @@ import tomahawk.network.OldConnectionKiller;
 import tomahawk.network.PacketWorker;
 import tomahawk.network.PingSender;
 import tomahawk.network.UDPBroadcaster;
+import tomahawk.util.Config;
+import tomahawk.util.Config.ConfigKey;
 import database.TomahawkDB;
 import database.TomahawkDBInterface;
 import filesystem.FileScanner;
 
 public class Tomahawk {
-	public static final int PORT = 50211;
-	public static final UUID IDENTIFIER = UUID.fromString("12312312-ffff-eeee-dddd-1234567890ab");
 
 	public static void main(String[] args) throws IOException, InterruptedException {
+		DOMConfigurator.configure("log4j.xml");
+
+		Config config = new Config("storage.conf");
 
 		Map<SocketChannel, ClientConnection> channelClientMap = Collections.synchronizedMap(new HashMap<SocketChannel, ClientConnection>());
 
 		TomahawkDBInterface database = new TomahawkDB();
 		database.connect("tomahawk.storage.jpa");
 
-		FileScanner fileScanner = new FileScanner();
+		FileScanner fileScanner = new FileScanner(database);
 		fileScanner.addNetworkCallback(new BroadcastService(channelClientMap.values()));
 		Thread fileScannerThread = new Thread(fileScanner);
 		fileScannerThread.start();
-		// fileScanner.processDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Trifling_Wings_-_a46901_---_Jamendo_-_MP3_VBR_192k"), database);
-		fileScanner.processDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Public_Domain_-_a1003_---_Jamendo_-_MP3_VBR_192k"), database);
+		fileScanner.watchDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Trifling_Wings_-_a46901_---_Jamendo_-_MP3_VBR_192k"));
+		fileScanner.watchDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Public_Domain_-_a1003_---_Jamendo_-_MP3_VBR_192k"));
+		fileScanner.asyncScanWatchedDirectories();
 		Thread.sleep(500);
 
 		ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(5);
@@ -52,13 +59,13 @@ public class Tomahawk {
 		packetWorker.addNewControlConnectionHandler(pingSender);
 		Thread packetWorkerThread = new Thread(packetWorker);
 
-		Dispatcher dispatcher = new Dispatcher(new InetSocketAddress(PORT), new DataChunkWorker(packetWorker));
+		Dispatcher dispatcher = new Dispatcher(new InetSocketAddress(config.getInt(ConfigKey.port)), new DataChunkWorker(packetWorker));
 		dispatcher.setNewConnectionEventHandler(pingSender);
 
 		Thread serverThread = new Thread(dispatcher);
 
 		threadPool.scheduleAtFixedRate(pingSender, 0, 5, TimeUnit.SECONDS);
-		threadPool.scheduleAtFixedRate(new UDPBroadcaster(PORT, IDENTIFIER), 0, 10, TimeUnit.SECONDS);
+		threadPool.scheduleAtFixedRate(new UDPBroadcaster(config.getInt(ConfigKey.port), UUID.fromString(config.get(ConfigKey.uuid)), config.get(ConfigKey.readable_name)), 0, 30, TimeUnit.SECONDS);
 		threadPool.scheduleAtFixedRate(connectionKiller, 0, 15, TimeUnit.MINUTES);
 		packetWorkerThread.start();
 		serverThread.start();

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class Dispatcher implements Runnable, Transmitter {
 
-	private final static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
+	private static final Logger LOG = LoggerFactory.getLogger(Dispatcher.class);
 
 	private final ServerSocketChannel serverChannel;
 	private final Selector selector;
@@ -147,14 +147,19 @@ public class Dispatcher implements Runnable, Transmitter {
 	}
 
 	private void write(SelectionKey key) throws IOException {
-		logger.trace("write to " + key);
+		LOG.trace("write to " + key);
 		SocketChannel socketChannel = (SocketChannel) key.channel();
 
 		Queue<ByteBuffer> queue = packetSendMap.get(socketChannel);
 		synchronized (queue) {
 			while (!queue.isEmpty()) {
 				ByteBuffer buffer = queue.peek();
-				socketChannel.write(buffer);
+				try {
+					socketChannel.write(buffer);
+				} catch (IOException e) {
+					LOG.debug("other side closed the stream");
+					disconnect(key);
+				}
 				if (buffer.hasRemaining()) {
 					break;
 				}
