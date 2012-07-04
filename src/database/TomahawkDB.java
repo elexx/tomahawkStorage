@@ -27,7 +27,7 @@ public class TomahawkDB implements TomahawkDBInterface {
 
 	@Override
 	public void connect(String persistenceUnitName) {
-		LOG.trace("connecting to " + persistenceUnitName);
+		LOG.info("connecting to " + persistenceUnitName);
 		entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName);
 		entityManager = entityManagerFactory.createEntityManager();
 	}
