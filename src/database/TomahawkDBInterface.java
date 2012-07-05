@@ -1,6 +1,7 @@
 package database;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import database.model.Album;
@@ -11,6 +12,8 @@ import database.model.Track;
 public interface TomahawkDBInterface {
 
 	public void connect(String persistenceUnitName);
+
+	public void connect(String persistenceUnitName, Map<String, String> overrideProperties);
 
 	public void close();
 

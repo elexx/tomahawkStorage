@@ -2,6 +2,7 @@ package database;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.persistence.EntityManager;
@@ -29,6 +30,13 @@ public class TomahawkDB implements TomahawkDBInterface {
 	public void connect(String persistenceUnitName) {
 		LOG.info("connecting to " + persistenceUnitName);
 		entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName);
+		entityManager = entityManagerFactory.createEntityManager();
+	}
+
+	@Override
+	public void connect(String persistenceUnitName, Map<String, String> properties) {
+		LOG.info("connecting to " + persistenceUnitName);
+		entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName, properties);
 		entityManager = entityManagerFactory.createEntityManager();
 	}
 

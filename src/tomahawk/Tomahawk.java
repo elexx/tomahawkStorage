@@ -3,7 +3,7 @@ package tomahawk;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
-import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +25,7 @@ import tomahawk.network.PingSender;
 import tomahawk.network.UDPBroadcaster;
 import tomahawk.util.Config;
 import tomahawk.util.Config.ConfigKey;
+import tomahawk.util.WatchedFolder;
 import database.TomahawkDB;
 import database.TomahawkDBInterface;
 import filesystem.FileScanner;
@@ -35,18 +36,22 @@ public class Tomahawk {
 		DOMConfigurator.configure("log4j.xml");
 
 		Config config = new Config("storage.conf");
+		Map<String, String> persistenceOverrideMap = config.getValuesWithPrefix("javax.persistence.jdbc", "hibernate", "dialect");
 
 		Map<SocketChannel, ClientConnection> channelClientMap = Collections.synchronizedMap(new HashMap<SocketChannel, ClientConnection>());
 
 		TomahawkDBInterface database = new TomahawkDB();
-		database.connect("tomahawk.storage.jpa");
+		database.connect("tomahawk.storage.jpa", persistenceOverrideMap);
+
+		WatchedFolder folders = new WatchedFolder("watchedFolders.conf");
 
 		FileScanner fileScanner = new FileScanner(database);
 		fileScanner.addNetworkCallback(new BroadcastService(channelClientMap.values()));
 		Thread fileScannerThread = new Thread(fileScanner);
 		fileScannerThread.start();
-		fileScanner.watchDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Trifling_Wings_-_a46901_---_Jamendo_-_MP3_VBR_192k"));
-		fileScanner.watchDirectory(FileSystems.getDefault().getPath("/Users/alexander/Downloads/Public_Domain_-_a1003_---_Jamendo_-_MP3_VBR_192k"));
+		for (Path path : folders) {
+			fileScanner.watchDirectory(path);
+		}
 		fileScanner.asyncScanWatchedDirectories();
 		Thread.sleep(500);
 
