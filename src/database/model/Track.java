@@ -65,7 +65,7 @@ public class Track {
 	public boolean equals(Object obj) {
 		if (obj.getClass() == Track.class) {
 			Track t = (Track) obj;
-			return (t.album.equals(album) && t.artist.equals(artist) && t.bitrate.equals(bitrate) && t.createTimestamp.getTime() == createTimestamp.getTime() && t.duration.equals(duration) && t.size.equals(size) && t.title.equals(title) && t.tracknumber.equals(tracknumber));
+			return (album.equals(t.album) && artist.equals(t.artist) && bitrate.equals(t.bitrate) && createTimestamp.getTime() == t.createTimestamp.getTime() && duration.equals(t.duration) && size.equals(t.size) && title.equals(t.title) && tracknumber.equals(t.tracknumber));
 		} else {
 			return false;
 		}

@@ -17,7 +17,7 @@ public class Album {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	public int id;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false)
 	public String name;
 
 	@ManyToOne(cascade = { CascadeType.PERSIST }, optional = false)
@@ -27,7 +27,7 @@ public class Album {
 	public boolean equals(Object obj) {
 		if (obj.getClass() == Album.class) {
 			Album a = (Album) obj;
-			return (a.name.equals(name) && a.artist.equals(artist));
+			return (name.equals(a.name) && artist.equals(a.artist));
 		} else {
 			return false;
 		}

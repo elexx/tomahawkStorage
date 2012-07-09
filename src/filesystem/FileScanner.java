@@ -123,7 +123,7 @@ public class FileScanner implements Runnable {
 					track.title = mp3File.getID3v2TagAsv24().getFirst(FieldKey.TITLE);
 					track.tracknumber = parseIntOrZero(mp3File.getID3v2TagAsv24().getFirst(FieldKey.TRACK));
 
-					String artistName = mp3File.getID3v2TagAsv24().getFirst(FieldKey.ARTIST);
+					String artistName = mp3File.getID3v2TagAsv24().getFirst(FieldKey.ARTIST).trim();
 					Artist artist;
 					if (!artists.containsKey(artistName)) {
 						artist = database.getArtistByName(artistName);
@@ -134,7 +134,7 @@ public class FileScanner implements Runnable {
 					}
 					track.artist = artist;
 
-					String albumName = mp3File.getID3v2TagAsv24().getFirst(FieldKey.ALBUM);
+					String albumName = mp3File.getID3v2TagAsv24().getFirst(FieldKey.ALBUM).trim();
 					Album album;
 					if (!albums.containsKey(albumName)) {
 						album = database.getAlbumByName(albumName);

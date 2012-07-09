@@ -182,8 +182,8 @@ public class PacketWorker implements Runnable {
 								answerObject.add("files", files);
 								String answerString = gson.toJson(answerObject);
 								LOG.trace(answerString);
-								ByteBuffer buffer = ByteBuffer.allocate(answerString.length() + 4 + 1);
-								buffer.putInt(answerString.length());
+								ByteBuffer buffer = ByteBuffer.allocate(answerString.getBytes().length + 4 + 1);
+								buffer.putInt(answerString.getBytes().length);
 								if (fileActionIt.hasNext()) {
 									buffer.put(Flag.flagsToByte(Flag.DBOP, Flag.JSON, Flag.FRAGMENT));
 								} else {
@@ -206,8 +206,8 @@ public class PacketWorker implements Runnable {
 								answerObject.addProperty("guid", fileActions.get(fileActions.size() - 1).uuid.toString());
 								String answerString = gson.toJson(answerObject);
 								LOG.trace(answerString);
-								ByteBuffer buffer = ByteBuffer.allocate(answerString.length() + 4 + 1);
-								buffer.putInt(answerString.length());
+								ByteBuffer buffer = ByteBuffer.allocate(answerString.getBytes().length + 4 + 1);
+								buffer.putInt(answerString.getBytes().length);
 								if (fileActionIt.hasNext()) {
 									buffer.put(Flag.flagsToByte(Flag.DBOP, Flag.JSON, Flag.FRAGMENT));
 								} else {

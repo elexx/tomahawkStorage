@@ -42,13 +42,17 @@ public class TomahawkDB implements TomahawkDBInterface {
 
 	@Override
 	public List<Track> getAllTracks() {
-		return entityManager.createNamedQuery("getAllTracks", Track.class).getResultList();
+		synchronized (entityManager) {
+			return entityManager.createNamedQuery("getAllTracks", Track.class).getResultList();
+		}
 	}
 
 	@Override
 	public Track getTrackById(int id) {
-		List<Track> tracks = entityManager.createNamedQuery("getTrackById", Track.class).setParameter("id", id).getResultList();
-		return tracks.size() > 0 ? tracks.get(0) : null;
+		synchronized (entityManager) {
+			List<Track> tracks = entityManager.createNamedQuery("getTrackById", Track.class).setParameter("id", id).getResultList();
+			return tracks.size() > 0 ? tracks.get(0) : null;
+		}
 	}
 
 	@Override
@@ -106,24 +110,35 @@ public class TomahawkDB implements TomahawkDBInterface {
 
 	@Override
 	public List<FileAction> getAllFileActions() {
-		return entityManager.createNamedQuery("getAllFileActions", FileAction.class).getResultList();
-	};
+		synchronized (entityManager) {
+			return entityManager.createNamedQuery("getAllFileActions", FileAction.class).getResultList();
+		}
+	}
 
 	@Override
 	public List<FileAction> getFileActionsSince(UUID uuid) {
-		return entityManager.createNamedQuery("getFileActionsSince", FileAction.class).setParameter("uuid", uuid).getResultList();
+		synchronized (entityManager) {
+
+			return entityManager.createNamedQuery("getFileActionsSince", FileAction.class).setParameter("uuid", uuid).getResultList();
+		}
 	}
 
 	@Override
 	public Artist getArtistByName(String name) {
-		List<Artist> artists = entityManager.createNamedQuery("getArtistByName", Artist.class).setParameter("name", name).getResultList();
-		return artists.size() > 0 ? artists.get(0) : new Artist();
+		synchronized (entityManager) {
+
+			List<Artist> artists = entityManager.createNamedQuery("getArtistByName", Artist.class).setParameter("name", name).getResultList();
+			return artists.size() > 0 ? artists.get(0) : new Artist();
+		}
 	}
 
 	@Override
 	public Album getAlbumByName(String name) {
-		List<Album> albums = entityManager.createNamedQuery("getAlbumByName", Album.class).setParameter("name", name).getResultList();
-		return albums.size() > 0 ? albums.get(0) : new Album();
+		synchronized (entityManager) {
+
+			List<Album> albums = entityManager.createNamedQuery("getAlbumByName", Album.class).setParameter("name", name).getResultList();
+			return albums.size() > 0 ? albums.get(0) : new Album();
+		}
 	}
 
 	@Override

@@ -22,7 +22,7 @@ public class Artist {
 	public boolean equals(Object obj) {
 		if (obj.getClass() == Artist.class) {
 			Artist a = (Artist) obj;
-			return a.name.equals(name);
+			return name.equals(a.name);
 		} else {
 			return false;
 		}
